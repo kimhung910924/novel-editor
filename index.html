@@ -8,7 +8,7 @@
   <style>
     :root {
       color-scheme: light;
-      --bg: #f6f7f9;
+      --bg: #fafafa;
       --surface: #ffffff;
       --surface-2: #eef1f5;
       --text: #171a1f;
@@ -24,7 +24,7 @@
       --tabs-h: 44px;
       --final-h: 32vh;
       --editor-h: calc(100vh - var(--topbar-h) - var(--tabs-h) - var(--final-h) - 10px);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
     }
 
     :root.dark {
@@ -74,7 +74,7 @@
       justify-content: space-between;
       padding: 0 18px;
       background: var(--surface);
-      border-bottom: 1px solid var(--line);
+      border-bottom: 1px solid #e0e0e0;
     }
 
     .brand {
@@ -116,7 +116,7 @@
       gap: 8px;
       min-width: 78px;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 11px;
     }
 
     .dot {
@@ -169,26 +169,26 @@
     .tabs {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 14px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--line);
+      gap: 10px;
+      padding: 8px 18px;
+      background: #fafafa;
+      border-bottom: 1px solid #e0e0e0;
     }
 
     .tab {
       height: 32px;
-      padding: 0 14px;
-      border: 1px solid transparent;
+      padding: 0 16px;
+      border: 1px solid #cfd4dc;
       background: transparent;
-      color: var(--muted);
+      color: #5f6368;
       border-radius: 7px;
       cursor: pointer;
     }
 
     .tab.active {
-      background: var(--surface-2);
-      border-color: var(--line);
-      color: var(--text);
+      background: #202124;
+      border-color: #202124;
+      color: #fff;
       font-weight: 700;
     }
 
@@ -212,7 +212,7 @@
       display: grid;
       grid-template-columns: minmax(220px, 1fr) 8px minmax(220px, 1fr) 8px minmax(220px, 1fr);
       min-width: 0;
-      background: var(--bg);
+      background: #fafafa;
     }
 
     .source-panel {
@@ -220,7 +220,7 @@
       display: grid;
       grid-template-rows: 46px 1fr 44px;
       background: var(--surface);
-      border-right: 1px solid var(--line);
+      border-right: 1px solid #e0e0e0;
     }
 
     .source-panel:last-child {
@@ -233,12 +233,41 @@
       justify-content: space-between;
       gap: 10px;
       padding: 0 14px;
-      border-bottom: 1px solid var(--line);
+      padding: 6px 12px;
+      border-bottom: 1px solid #e0e0e0;
+      min-height: 34px;
     }
 
     .panel-title {
       font-size: 14px;
       font-weight: 780;
+    }
+
+    .source-panel.gpt {
+      border-top: 3px solid #9aa0a6;
+    }
+
+    .source-panel.gemini {
+      border-top: 3px solid #1a73e8;
+    }
+
+    .source-panel.claude {
+      border-top: 3px solid #e37400;
+    }
+
+    .source-panel.gpt .panel-head {
+      background: #f1f3f4;
+      color: #5f6368;
+    }
+
+    .source-panel.gemini .panel-head {
+      background: #e8f0fe;
+      color: #1a73e8;
+    }
+
+    .source-panel.claude .panel-head {
+      background: #fef3e2;
+      color: #e37400;
     }
 
     .panel-body {
@@ -266,19 +295,27 @@
       background: color-mix(in srgb, var(--accent) 28%, transparent);
     }
 
+    .source-text {
+      background: #fff;
+    }
+
+    .text-area::placeholder {
+      color: #bbb;
+    }
+
     .panel-foot {
       display: flex;
       align-items: center;
       justify-content: flex-end;
       padding: 6px 10px;
-      border-top: 1px solid var(--line);
+      border-top: 1px solid #e0e0e0;
       background: var(--surface);
     }
 
     .v-resizer {
       cursor: col-resize;
       background:
-        linear-gradient(90deg, transparent 0 3px, var(--line) 3px 5px, transparent 5px 8px);
+        linear-gradient(90deg, transparent 0 3px, #e0e0e0 3px 5px, transparent 5px 8px);
     }
 
     .v-resizer:hover, .v-resizer.dragging {
@@ -291,8 +328,8 @@
       display: grid;
       place-items: center;
       background: var(--bg);
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
+      border-top: 1px solid #e0e0e0;
+      border-bottom: 1px solid #e0e0e0;
     }
 
     .h-resizer::before {
@@ -322,29 +359,36 @@
       display: grid;
       grid-template-rows: 46px 1fr;
       background: var(--surface);
+      border-top: 2px solid #e0e0e0;
     }
 
     .final-head {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 0 14px;
-      border-bottom: 1px solid var(--line);
+      gap: 10px;
+      width: min(60%, 920px);
+      min-width: 520px;
+      margin: 0 auto;
+      padding: 0;
+      border-bottom: 1px solid #e0e0e0;
     }
 
     .final-tools {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .counter {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      color: var(--muted);
-      font-size: 13px;
+      color: #999;
+      font-size: 12px;
+    }
+
+    #countValue::after {
+      content: "자";
     }
 
     .select {
@@ -358,11 +402,27 @@
     .final-editor {
       min-height: 0;
       overflow: auto;
+      display: flex;
+      justify-content: center;
     }
 
     #finalText {
       height: 100%;
-      padding: 18px;
+      width: min(60%, 920px);
+      min-width: 520px;
+      padding: 22px 0;
+    }
+
+    .source-panel.gpt .add-all {
+      color: #5f6368;
+    }
+
+    .source-panel.gemini .add-all {
+      color: #1a73e8;
+    }
+
+    .source-panel.claude .add-all {
+      color: #e37400;
     }
 
     .floating-add {
@@ -466,6 +526,12 @@
       .source-panel {
         min-width: 280px;
       }
+
+      .final-head,
+      #finalText {
+        width: calc(100% - 32px);
+        min-width: 0;
+      }
     }
   </style>
 </head>
@@ -494,7 +560,7 @@
     <main class="workspace" id="workspace">
       <section id="compareTab" class="tab-panel active" aria-label="비교 패널">
         <div id="comparePane" class="compare-pane">
-          <article class="source-panel">
+          <article class="source-panel gpt">
             <div class="panel-head">
               <div class="panel-title">GPT</div>
             </div>
@@ -506,7 +572,7 @@
             </div>
           </article>
           <div class="v-resizer" data-left="0" data-right="2" aria-hidden="true"></div>
-          <article class="source-panel">
+          <article class="source-panel gemini">
             <div class="panel-head">
               <div class="panel-title">Gemini</div>
             </div>
@@ -518,7 +584,7 @@
             </div>
           </article>
           <div class="v-resizer" data-left="2" data-right="4" aria-hidden="true"></div>
-          <article class="source-panel">
+          <article class="source-panel claude">
             <div class="panel-head">
               <div class="panel-title">Claude</div>
             </div>
@@ -544,14 +610,12 @@
         <div class="final-head">
           <div class="panel-title">최종본</div>
           <div class="final-tools">
-            <label class="counter">
-              <select id="countMode" class="select" aria-label="자수 계산 방식">
-                <option value="chars">자수</option>
-                <option value="charsNoSpace">공백제외</option>
-                <option value="words">단어수</option>
-              </select>
-              <span id="countValue">0</span>
-            </label>
+            <span id="countValue" class="counter">0</span>
+            <select id="countMode" class="select" aria-label="자수 계산 방식">
+              <option value="chars">자수</option>
+              <option value="charsNoSpace">공백제외</option>
+              <option value="words">단어수</option>
+            </select>
           </div>
         </div>
         <div class="final-editor">
