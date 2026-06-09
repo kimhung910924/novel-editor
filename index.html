@@ -1,0 +1,984 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>소설 비교 에디터</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --surface-2: #eef1f5;
+      --text: #171a1f;
+      --muted: #626b78;
+      --line: #d8dde6;
+      --accent: #2563eb;
+      --accent-2: #1d4ed8;
+      --danger: #dc2626;
+      --saved: #10b981;
+      --saving: #f59e0b;
+      --shadow: 0 14px 38px rgba(15, 23, 42, 0.14);
+      --topbar-h: 52px;
+      --tabs-h: 44px;
+      --final-h: 32vh;
+      --editor-h: calc(100vh - var(--topbar-h) - var(--tabs-h) - var(--final-h) - 10px);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    }
+
+    :root.dark {
+      color-scheme: dark;
+      --bg: #111418;
+      --surface: #181c22;
+      --surface-2: #222832;
+      --text: #edf1f7;
+      --muted: #a5adba;
+      --line: #303845;
+      --accent: #60a5fa;
+      --accent-2: #93c5fd;
+      --danger: #f87171;
+      --shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 960px;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    button, select, textarea, input {
+      font: inherit;
+    }
+
+    button, select, input {
+      color: var(--text);
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: var(--topbar-h) var(--tabs-h) 1fr;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: var(--text);
+      color: var(--surface);
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 740;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 78px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--saved);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--saved) 18%, transparent);
+    }
+
+    .status.saving .dot {
+      background: var(--saving);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--saving) 20%, transparent);
+    }
+
+    .status.error .dot {
+      background: var(--danger);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent);
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 7px;
+      height: 34px;
+      padding: 0 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn.icon {
+      width: 34px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+    }
+
+    .tabs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tab {
+      height: 32px;
+      padding: 0 14px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: var(--surface-2);
+      border-color: var(--line);
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: var(--editor-h) 10px var(--final-h);
+    }
+
+    .tab-panel {
+      min-height: 0;
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .compare-pane {
+      height: 100%;
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) 8px minmax(220px, 1fr) 8px minmax(220px, 1fr);
+      min-width: 0;
+      background: var(--bg);
+    }
+
+    .source-panel {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: 46px 1fr 44px;
+      background: var(--surface);
+      border-right: 1px solid var(--line);
+    }
+
+    .source-panel:last-child {
+      border-right: 0;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 780;
+    }
+
+    .panel-body {
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .text-area {
+      width: 100%;
+      min-height: 100%;
+      resize: none;
+      border: 0;
+      outline: 0;
+      padding: 16px;
+      background: transparent;
+      color: var(--text);
+      line-height: 1.72;
+      font-size: 16px;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      white-space: pre-wrap;
+    }
+
+    .text-area::selection {
+      background: color-mix(in srgb, var(--accent) 28%, transparent);
+    }
+
+    .panel-foot {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 6px 10px;
+      border-top: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .v-resizer {
+      cursor: col-resize;
+      background:
+        linear-gradient(90deg, transparent 0 3px, var(--line) 3px 5px, transparent 5px 8px);
+    }
+
+    .v-resizer:hover, .v-resizer.dragging {
+      background:
+        linear-gradient(90deg, transparent 0 2px, var(--accent) 2px 6px, transparent 6px 8px);
+    }
+
+    .h-resizer {
+      cursor: row-resize;
+      display: grid;
+      place-items: center;
+      background: var(--bg);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .h-resizer::before {
+      content: "";
+      width: 56px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--line);
+    }
+
+    .h-resizer:hover::before, .h-resizer.dragging::before {
+      background: var(--accent);
+    }
+
+    .draft-pane {
+      height: 100%;
+      background: var(--surface);
+    }
+
+    .draft-pane .text-area {
+      height: 100%;
+      padding: 20px;
+    }
+
+    .final-pane {
+      min-height: 180px;
+      display: grid;
+      grid-template-rows: 46px 1fr;
+      background: var(--surface);
+    }
+
+    .final-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .final-tools {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .counter {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .select {
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--surface);
+      padding: 0 8px;
+    }
+
+    .final-editor {
+      min-height: 0;
+      overflow: auto;
+    }
+
+    #finalText {
+      height: 100%;
+      padding: 18px;
+    }
+
+    .floating-add {
+      position: fixed;
+      z-index: 20;
+      display: none;
+      height: 36px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 7px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .floating-add.show {
+      display: block;
+    }
+
+    .toast {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 30;
+      display: none;
+      max-width: 360px;
+      padding: 11px 13px;
+      border-radius: 7px;
+      background: var(--text);
+      color: var(--surface);
+      box-shadow: var(--shadow);
+      font-size: 13px;
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    .config-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    .config-overlay.show {
+      display: flex;
+    }
+
+    .config-box {
+      width: min(520px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .config-box h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .config-box p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        min-width: 0;
+      }
+
+      .topbar {
+        padding: 0 10px;
+      }
+
+      h1 {
+        font-size: 14px;
+      }
+
+      .actions {
+        gap: 6px;
+      }
+
+      .btn {
+        padding: 0 9px;
+      }
+
+      .compare-pane {
+        overflow-x: auto;
+      }
+
+      .source-panel {
+        min-width: 280px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">N</div>
+        <h1>소설 비교 에디터</h1>
+      </div>
+      <div class="actions">
+        <div id="saveStatus" class="status" title="저장 상태">
+          <span class="dot"></span>
+          <span id="saveStatusText">준비중</span>
+        </div>
+        <button id="shareBtn" class="btn" type="button">공유 URL 복사</button>
+        <button id="themeBtn" class="btn icon" type="button" title="다크모드 전환" aria-label="다크모드 전환">◐</button>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="작업 탭">
+      <button class="tab active" type="button" data-tab="compare">비교</button>
+      <button class="tab" type="button" data-tab="draft">초안 입력</button>
+    </nav>
+
+    <main class="workspace" id="workspace">
+      <section id="compareTab" class="tab-panel active" aria-label="비교 패널">
+        <div id="comparePane" class="compare-pane">
+          <article class="source-panel">
+            <div class="panel-head">
+              <div class="panel-title">GPT</div>
+            </div>
+            <div class="panel-body">
+              <textarea id="gptText" class="text-area source-text" spellcheck="false" placeholder="GPT 결과를 붙여넣으세요."></textarea>
+            </div>
+            <div class="panel-foot">
+              <button class="btn add-all" type="button" data-source="gptText">전체 텍스트 → 최종본</button>
+            </div>
+          </article>
+          <div class="v-resizer" data-left="0" data-right="2" aria-hidden="true"></div>
+          <article class="source-panel">
+            <div class="panel-head">
+              <div class="panel-title">Gemini</div>
+            </div>
+            <div class="panel-body">
+              <textarea id="gemText" class="text-area source-text" spellcheck="false" placeholder="Gemini 결과를 붙여넣으세요."></textarea>
+            </div>
+            <div class="panel-foot">
+              <button class="btn add-all" type="button" data-source="gemText">전체 텍스트 → 최종본</button>
+            </div>
+          </article>
+          <div class="v-resizer" data-left="2" data-right="4" aria-hidden="true"></div>
+          <article class="source-panel">
+            <div class="panel-head">
+              <div class="panel-title">Claude</div>
+            </div>
+            <div class="panel-body">
+              <textarea id="claText" class="text-area source-text" spellcheck="false" placeholder="Claude 결과를 붙여넣으세요."></textarea>
+            </div>
+            <div class="panel-foot">
+              <button class="btn add-all" type="button" data-source="claText">전체 텍스트 → 최종본</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="draftTab" class="tab-panel" aria-label="초안 입력">
+        <div class="draft-pane">
+          <textarea id="draftText" class="text-area" spellcheck="false" placeholder="초안을 입력하세요."></textarea>
+        </div>
+      </section>
+
+      <div id="heightResizer" class="h-resizer" aria-hidden="true"></div>
+
+      <section class="final-pane" aria-label="최종본 에디터">
+        <div class="final-head">
+          <div class="panel-title">최종본</div>
+          <div class="final-tools">
+            <label class="counter">
+              <select id="countMode" class="select" aria-label="자수 계산 방식">
+                <option value="chars">자수</option>
+                <option value="charsNoSpace">공백제외</option>
+                <option value="words">단어수</option>
+              </select>
+              <span id="countValue">0</span>
+            </label>
+          </div>
+        </div>
+        <div class="final-editor">
+          <textarea id="finalText" class="text-area" spellcheck="false" placeholder="선택한 문장이나 전체 텍스트를 모아 최종본을 편집하세요."></textarea>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <button id="floatingAdd" class="floating-add" type="button">↓ 최종본에 추가</button>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div id="configOverlay" class="config-overlay">
+    <div class="config-box">
+      <h2>Supabase 환경변수가 필요합니다</h2>
+      <p>Vercel 프로젝트 환경변수에 <strong>SUPABASE_URL</strong>과 <strong>SUPABASE_ANON_KEY</strong>를 등록한 뒤 다시 열어주세요. 로컬에서는 같은 이름의 환경변수로 Vercel 개발 서버를 실행하면 됩니다.</p>
+    </div>
+  </div>
+
+  <script>
+    const DB_FIELDS = ["gpt_text", "gem_text", "cla_text", "final_text", "draft_text"];
+    const DOM_TO_DB = {
+      gptText: "gpt_text",
+      gemText: "gem_text",
+      claText: "cla_text",
+      finalText: "final_text",
+      draftText: "draft_text"
+    };
+    const DB_TO_DOM = Object.fromEntries(Object.entries(DOM_TO_DB).map(([dom, db]) => [db, dom]));
+    const SAVE_DELAY = 700;
+    const MIN_PANEL = 220;
+    const SESSION_STORAGE_KEY = "novel_editor_session_key";
+    const THEME_STORAGE_KEY = "novel_editor_theme";
+
+    const els = {
+      workspace: document.getElementById("workspace"),
+      comparePane: document.getElementById("comparePane"),
+      heightResizer: document.getElementById("heightResizer"),
+      saveStatus: document.getElementById("saveStatus"),
+      saveStatusText: document.getElementById("saveStatusText"),
+      shareBtn: document.getElementById("shareBtn"),
+      themeBtn: document.getElementById("themeBtn"),
+      countMode: document.getElementById("countMode"),
+      countValue: document.getElementById("countValue"),
+      floatingAdd: document.getElementById("floatingAdd"),
+      toast: document.getElementById("toast"),
+      configOverlay: document.getElementById("configOverlay")
+    };
+
+    const textareas = {
+      gptText: document.getElementById("gptText"),
+      gemText: document.getElementById("gemText"),
+      claText: document.getElementById("claText"),
+      finalText: document.getElementById("finalText"),
+      draftText: document.getElementById("draftText")
+    };
+
+    const state = {
+      supabase: null,
+      sessionKey: "",
+      rowId: null,
+      saveTimer: null,
+      applyingRemote: false,
+      selectedText: "",
+      activeSelectionEl: null,
+      realtimeChannel: null
+    };
+
+    init();
+
+    async function init() {
+      applyInitialTheme();
+      bindUi();
+      setStatus("saving", "준비중");
+      state.sessionKey = resolveSessionKey();
+
+      try {
+        const config = await loadEnv();
+        if (!config.SUPABASE_URL || !config.SUPABASE_ANON_KEY) {
+          showConfigOverlay();
+          setStatus("error", "설정 필요");
+          return;
+        }
+
+        state.supabase = window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY);
+        await loadOrCreateSession();
+        subscribeRealtime();
+        setStatus("saved", "저장됨");
+      } catch (error) {
+        console.error(error);
+        setStatus("error", "오류");
+        showToast("Supabase 연결을 확인해주세요.");
+      }
+    }
+
+    async function loadEnv() {
+      const response = await fetch("/api/env", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("Failed to load environment config");
+      }
+      return response.json();
+    }
+
+    function resolveSessionKey() {
+      const params = new URLSearchParams(window.location.search);
+      const keyFromUrl = params.get("s");
+      if (keyFromUrl) {
+        localStorage.setItem(SESSION_STORAGE_KEY, keyFromUrl);
+        return keyFromUrl;
+      }
+
+      const existing = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (existing) return existing;
+
+      const created = crypto.randomUUID();
+      localStorage.setItem(SESSION_STORAGE_KEY, created);
+      return created;
+    }
+
+    async function loadOrCreateSession() {
+      const { data, error } = await state.supabase
+        .from("sessions")
+        .select("*")
+        .eq("session_key", state.sessionKey)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        state.rowId = data.id;
+        applyRow(data);
+        return;
+      }
+
+      const blank = {
+        session_key: state.sessionKey,
+        gpt_text: "",
+        gem_text: "",
+        cla_text: "",
+        final_text: "",
+        draft_text: "",
+        updated_at: new Date().toISOString()
+      };
+
+      const { data: inserted, error: insertError } = await state.supabase
+        .from("sessions")
+        .insert(blank)
+        .select("*")
+        .single();
+
+      if (insertError) throw insertError;
+      state.rowId = inserted.id;
+      applyRow(inserted);
+    }
+
+    function subscribeRealtime() {
+      state.realtimeChannel = state.supabase
+        .channel(`session:${state.sessionKey}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "sessions",
+            filter: `session_key=eq.${state.sessionKey}`
+          },
+          payload => {
+            if (!payload.new) return;
+            state.rowId = payload.new.id;
+            applyRow(payload.new, true);
+            setStatus("saved", "동기화됨");
+          }
+        )
+        .subscribe();
+    }
+
+    function applyRow(row, remote = false) {
+      state.applyingRemote = true;
+      DB_FIELDS.forEach(field => {
+        const domId = DB_TO_DOM[field];
+        const el = textareas[domId];
+        if (document.activeElement !== el || remote) {
+          el.value = row[field] || "";
+        }
+      });
+      updateCount();
+      state.applyingRemote = false;
+    }
+
+    function bindUi() {
+      Object.values(textareas).forEach(el => {
+        el.addEventListener("input", () => {
+          updateCount();
+          scheduleSave();
+        });
+      });
+
+      document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => switchTab(tab.dataset.tab));
+      });
+
+      document.querySelectorAll(".add-all").forEach(button => {
+        button.addEventListener("click", () => appendToFinal(textareas[button.dataset.source].value));
+      });
+
+      document.querySelectorAll(".source-text").forEach(el => {
+        el.addEventListener("mouseup", () => updateFloatingAdd(el));
+        el.addEventListener("keyup", () => updateFloatingAdd(el));
+        el.addEventListener("scroll", hideFloatingAdd);
+      });
+
+      document.addEventListener("mousedown", event => {
+        if (event.target !== els.floatingAdd && !event.target.classList.contains("source-text")) {
+          hideFloatingAdd();
+        }
+      });
+
+      els.floatingAdd.addEventListener("mousedown", event => event.preventDefault());
+      els.floatingAdd.addEventListener("click", () => {
+        appendToFinal(state.selectedText);
+        hideFloatingAdd();
+      });
+
+      els.countMode.addEventListener("change", updateCount);
+      els.shareBtn.addEventListener("click", copyShareUrl);
+      els.themeBtn.addEventListener("click", toggleTheme);
+
+      document.querySelectorAll(".v-resizer").forEach(resizer => {
+        resizer.addEventListener("pointerdown", startVerticalResize);
+      });
+
+      els.heightResizer.addEventListener("pointerdown", startHeightResize);
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll(".tab").forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.tab === name);
+      });
+      document.querySelectorAll(".tab-panel").forEach(panel => {
+        panel.classList.toggle("active", panel.id === `${name}Tab`);
+      });
+      hideFloatingAdd();
+    }
+
+    function updateFloatingAdd(el) {
+      const selected = el.value.slice(el.selectionStart, el.selectionEnd).trim();
+      if (!selected) {
+        hideFloatingAdd();
+        return;
+      }
+
+      state.selectedText = selected;
+      state.activeSelectionEl = el;
+      const rect = el.getBoundingClientRect();
+      const top = Math.min(Math.max(rect.top + 12, 66), window.innerHeight - 92);
+      const left = Math.min(Math.max(rect.left + rect.width - 172, 12), window.innerWidth - 176);
+      els.floatingAdd.style.top = `${top}px`;
+      els.floatingAdd.style.left = `${left}px`;
+      els.floatingAdd.classList.add("show");
+    }
+
+    function hideFloatingAdd() {
+      els.floatingAdd.classList.remove("show");
+    }
+
+    function appendToFinal(text) {
+      const value = text.trim();
+      if (!value) return;
+      const final = textareas.finalText;
+      const prefix = final.value.trim().length ? "\n\n" : "";
+      final.value += `${prefix}${value}`;
+      final.focus();
+      final.selectionStart = final.selectionEnd = final.value.length;
+      updateCount();
+      scheduleSave();
+    }
+
+    function startVerticalResize(event) {
+      const resizer = event.currentTarget;
+      const leftIndex = Number(resizer.dataset.left);
+      const rightIndex = Number(resizer.dataset.right);
+      const startX = event.clientX;
+      const columns = getPanelColumns();
+      const leftStart = columns[leftIndex];
+      const rightStart = columns[rightIndex];
+
+      resizer.setPointerCapture(event.pointerId);
+      resizer.classList.add("dragging");
+
+      const onMove = moveEvent => {
+        const delta = moveEvent.clientX - startX;
+        const left = Math.max(MIN_PANEL, leftStart + delta);
+        const right = Math.max(MIN_PANEL, rightStart - delta);
+        columns[leftIndex] = left;
+        columns[rightIndex] = right;
+        setPanelColumns(columns);
+      };
+
+      const onUp = () => {
+        resizer.classList.remove("dragging");
+        resizer.removeEventListener("pointermove", onMove);
+        resizer.removeEventListener("pointerup", onUp);
+      };
+
+      resizer.addEventListener("pointermove", onMove);
+      resizer.addEventListener("pointerup", onUp);
+    }
+
+    function getPanelColumns() {
+      return getComputedStyle(els.comparePane)
+        .gridTemplateColumns
+        .split(" ")
+        .map(value => Number.parseFloat(value));
+    }
+
+    function setPanelColumns(columns) {
+      els.comparePane.style.gridTemplateColumns = `${columns[0]}px 8px ${columns[2]}px 8px ${columns[4]}px`;
+    }
+
+    function startHeightResize(event) {
+      const startY = event.clientY;
+      const rect = els.workspace.getBoundingClientRect();
+      const startFinalHeight = document.querySelector(".final-pane").getBoundingClientRect().height;
+
+      els.heightResizer.setPointerCapture(event.pointerId);
+      els.heightResizer.classList.add("dragging");
+
+      const onMove = moveEvent => {
+        const delta = startY - moveEvent.clientY;
+        const next = Math.min(Math.max(180, startFinalHeight + delta), rect.height - 220);
+        document.documentElement.style.setProperty("--final-h", `${next}px`);
+        document.documentElement.style.setProperty("--editor-h", `calc(100vh - var(--topbar-h) - var(--tabs-h) - var(--final-h) - 10px)`);
+      };
+
+      const onUp = () => {
+        els.heightResizer.classList.remove("dragging");
+        els.heightResizer.removeEventListener("pointermove", onMove);
+        els.heightResizer.removeEventListener("pointerup", onUp);
+      };
+
+      els.heightResizer.addEventListener("pointermove", onMove);
+      els.heightResizer.addEventListener("pointerup", onUp);
+    }
+
+    function scheduleSave() {
+      if (state.applyingRemote || !state.supabase || !state.sessionKey) return;
+      setStatus("saving", "저장중");
+      clearTimeout(state.saveTimer);
+      state.saveTimer = setTimeout(saveNow, SAVE_DELAY);
+    }
+
+    async function saveNow() {
+      const payload = {
+        session_key: state.sessionKey,
+        updated_at: new Date().toISOString()
+      };
+
+      Object.entries(DOM_TO_DB).forEach(([domId, dbField]) => {
+        payload[dbField] = textareas[domId].value;
+      });
+
+      try {
+        const { data, error } = await state.supabase
+          .from("sessions")
+          .upsert(payload, { onConflict: "session_key" })
+          .select("id")
+          .single();
+
+        if (error) throw error;
+        state.rowId = data.id;
+        setStatus("saved", "저장됨");
+      } catch (error) {
+        console.error(error);
+        setStatus("error", "오류");
+        showToast("저장에 실패했습니다.");
+      }
+    }
+
+    function updateCount() {
+      const text = textareas.finalText.value;
+      const mode = els.countMode.value;
+      let count = 0;
+
+      if (mode === "chars") {
+        count = Array.from(text).length;
+      } else if (mode === "charsNoSpace") {
+        count = Array.from(text.replace(/\s/g, "")).length;
+      } else {
+        count = text.trim() ? text.trim().split(/\s+/).length : 0;
+      }
+
+      els.countValue.textContent = count.toLocaleString("ko-KR");
+    }
+
+    async function copyShareUrl() {
+      const url = new URL(window.location.href);
+      url.searchParams.set("s", state.sessionKey);
+      await navigator.clipboard.writeText(url.toString());
+      showToast("공유 URL을 복사했습니다.");
+    }
+
+    function applyInitialTheme() {
+      const saved = localStorage.getItem(THEME_STORAGE_KEY);
+      const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.classList.toggle("dark", saved ? saved === "dark" : prefersDark);
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle("dark");
+      localStorage.setItem(THEME_STORAGE_KEY, isDark ? "dark" : "light");
+    }
+
+    function setStatus(type, text) {
+      els.saveStatus.className = `status ${type}`;
+      els.saveStatusText.textContent = text;
+    }
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => els.toast.classList.remove("show"), 2200);
+    }
+
+    function showConfigOverlay() {
+      els.configOverlay.classList.add("show");
+    }
+  </script>
+</body>
+</html>
