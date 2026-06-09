@@ -362,6 +362,36 @@
       border-top: 2px solid #e0e0e0;
     }
 
+    .final-pane.final-overlay {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 60;
+      width: 45%;
+      height: 100vh;
+      min-height: 100vh;
+      background: #fff;
+      border-top: 0;
+      border-left: 2px solid #e0e0e0;
+      box-shadow: -18px 0 36px rgba(0, 0, 0, 0.12);
+      transform: translateX(100%);
+      transition: transform 0.2s ease;
+    }
+
+    .final-pane.final-overlay.is-expanded {
+      transform: translateX(0);
+    }
+
+    .final-pane.final-overlay .final-head,
+    .final-pane.final-overlay #finalText {
+      width: calc(100% - 48px);
+      min-width: 0;
+    }
+
+    .final-pane.final-overlay #finalText {
+      padding: 22px 0;
+    }
+
     .final-head {
       display: flex;
       align-items: center;
@@ -532,6 +562,10 @@
         width: calc(100% - 32px);
         min-width: 0;
       }
+
+      .final-pane.final-overlay {
+        width: 88%;
+      }
     }
   </style>
 </head>
@@ -616,6 +650,7 @@
               <option value="charsNoSpace">공백제외</option>
               <option value="words">단어수</option>
             </select>
+            <button id="finalExpandBtn" class="btn icon" type="button" title="최종본 확대" aria-label="최종본 확대">⛶</button>
           </div>
         </div>
         <div class="final-editor">
@@ -658,6 +693,8 @@
       saveStatusText: document.getElementById("saveStatusText"),
       shareBtn: document.getElementById("shareBtn"),
       themeBtn: document.getElementById("themeBtn"),
+      finalPane: document.querySelector(".final-pane"),
+      finalExpandBtn: document.getElementById("finalExpandBtn"),
       countMode: document.getElementById("countMode"),
       countValue: document.getElementById("countValue"),
       floatingAdd: document.getElementById("floatingAdd"),
@@ -681,6 +718,8 @@
       applyingRemote: false,
       selectedText: "",
       activeSelectionEl: null,
+      finalExpanded: false,
+      finalCollapseTimer: null,
       realtimeChannel: null
     };
 
@@ -831,6 +870,10 @@
         if (event.target !== els.floatingAdd && !event.target.classList.contains("source-text")) {
           hideFloatingAdd();
         }
+
+        if (state.finalExpanded && !els.finalPane.contains(event.target)) {
+          collapseFinalEditor();
+        }
       });
 
       els.floatingAdd.addEventListener("mousedown", event => event.preventDefault());
@@ -842,6 +885,10 @@
       els.countMode.addEventListener("change", updateCount);
       els.shareBtn.addEventListener("click", copyShareUrl);
       els.themeBtn.addEventListener("click", toggleTheme);
+      els.finalExpandBtn.addEventListener("click", event => {
+        event.stopPropagation();
+        toggleFinalEditor();
+      });
 
       document.querySelectorAll(".v-resizer").forEach(resizer => {
         resizer.addEventListener("pointerdown", startVerticalResize);
@@ -879,6 +926,40 @@
 
     function hideFloatingAdd() {
       els.floatingAdd.classList.remove("show");
+    }
+
+    function toggleFinalEditor() {
+      if (state.finalExpanded) {
+        collapseFinalEditor();
+      } else {
+        expandFinalEditor();
+      }
+    }
+
+    function expandFinalEditor() {
+      clearTimeout(state.finalCollapseTimer);
+      state.finalExpanded = true;
+      els.finalPane.classList.add("final-overlay");
+      els.finalExpandBtn.textContent = "✕";
+      els.finalExpandBtn.title = "최종본 축소";
+      els.finalExpandBtn.setAttribute("aria-label", "최종본 축소");
+      requestAnimationFrame(() => {
+        els.finalPane.classList.add("is-expanded");
+      });
+    }
+
+    function collapseFinalEditor() {
+      if (!state.finalExpanded) return;
+      state.finalExpanded = false;
+      els.finalPane.classList.remove("is-expanded");
+      els.finalExpandBtn.textContent = "⛶";
+      els.finalExpandBtn.title = "최종본 확대";
+      els.finalExpandBtn.setAttribute("aria-label", "최종본 확대");
+      state.finalCollapseTimer = setTimeout(() => {
+        if (!state.finalExpanded) {
+          els.finalPane.classList.remove("final-overlay");
+        }
+      }, 200);
     }
 
     function appendToFinal(text) {
