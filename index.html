@@ -730,6 +730,7 @@
       bindUi();
       setStatus("saving", "준비중");
       state.sessionKey = resolveSessionKey();
+      syncSessionUrl();
 
       try {
         const config = await loadEnv();
@@ -772,6 +773,17 @@
       const created = crypto.randomUUID();
       localStorage.setItem(SESSION_STORAGE_KEY, created);
       return created;
+    }
+
+    function syncSessionUrl() {
+      if (!state.sessionKey || !window.history?.replaceState) return;
+
+      const url = new URL(window.location.href);
+      const sessionSearch = `?s=${encodeURIComponent(state.sessionKey)}`;
+      if (url.search === sessionSearch) return;
+
+      url.search = sessionSearch;
+      window.history.replaceState(null, "", url.toString());
     }
 
     async function loadOrCreateSession() {
@@ -1092,9 +1104,7 @@
     }
 
     async function copyShareUrl() {
-      const url = new URL(window.location.href);
-      url.searchParams.set("s", state.sessionKey);
-      await navigator.clipboard.writeText(url.toString());
+      await navigator.clipboard.writeText(window.location.href);
       showToast("공유 URL을 복사했습니다.");
     }
 
