@@ -354,15 +354,156 @@
       padding: 20px;
     }
 
+    .card-board-pane {
+      height: 100%;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 50px 1fr;
+      background: #f8f9fa;
+    }
+
+    .card-board-pane.idea-board {
+      background: #fff8e1;
+    }
+
+    .card-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      border-bottom: 1px solid #e0e0e0;
+      background: inherit;
+    }
+
+    .card-search {
+      width: min(360px, 100%);
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--surface);
+      padding: 0 11px;
+      outline: 0;
+    }
+
+    .card-search:focus {
+      border-color: var(--accent);
+    }
+
+    .card-grid {
+      min-height: 0;
+      overflow: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, 280px);
+      align-content: start;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .note-card {
+      position: relative;
+      width: 280px;
+      min-height: 116px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background: #fff;
+      padding: 14px 38px 28px 14px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+      cursor: text;
+    }
+
+    .idea-board .note-card {
+      background: #fffde7;
+    }
+
+    .note-card.pinned {
+      background: #eef6ff;
+      border-color: #a8c7fa;
+    }
+
+    .idea-board .note-card.pinned {
+      background: #fff4bf;
+      border-color: #f4d35e;
+    }
+
+    .card-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: 4px;
+    }
+
+    .card-action {
+      width: 24px;
+      height: 24px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .card-action:hover {
+      background: rgba(0, 0, 0, 0.07);
+      color: var(--text);
+    }
+
+    .card-text {
+      min-height: 54px;
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 14px;
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+    }
+
+    .card-title-line {
+      font-weight: 500;
+    }
+
+    .card-editor {
+      width: 100%;
+      min-height: 118px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--surface);
+      color: var(--text);
+      padding: 8px;
+      outline: 0;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .card-created {
+      position: absolute;
+      right: 12px;
+      bottom: 8px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .empty-board {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      padding: 18px 4px;
+      font-size: 13px;
+    }
+
     .workspace.focus-mode,
-    .workspace.summary-mode {
+    .workspace.summary-mode,
+    .workspace.board-mode {
       grid-template-rows: 1fr;
     }
 
     .workspace.focus-mode .final-pane,
     .workspace.focus-mode .h-resizer,
     .workspace.summary-mode .final-pane,
-    .workspace.summary-mode .h-resizer {
+    .workspace.summary-mode .h-resizer,
+    .workspace.board-mode .final-pane,
+    .workspace.board-mode .h-resizer {
       display: none;
     }
 
@@ -670,6 +811,15 @@
         overflow-x: auto;
       }
 
+      .tabs {
+        gap: 6px;
+        overflow-x: auto;
+      }
+
+      .tab {
+        padding: 0 12px;
+      }
+
       .source-panel {
         min-width: 280px;
       }
@@ -707,6 +857,8 @@
       <button class="tab active" type="button" data-tab="compare">비교</button>
       <button class="tab" type="button" data-tab="focus">집중</button>
       <button class="tab" type="button" data-tab="summary">정리</button>
+      <button class="tab" type="button" data-tab="memo">메모</button>
+      <button class="tab" type="button" data-tab="idea">아이디어</button>
       <button class="tab" type="button" data-tab="draft">초안 입력</button>
     </nav>
 
@@ -801,6 +953,26 @@
         </div>
       </section>
 
+      <section id="memoTab" class="tab-panel" aria-label="메모">
+        <div class="card-board-pane memo-board" data-board="memo">
+          <div class="card-toolbar">
+            <button id="addMemoCard" class="btn primary" type="button">+ 새 카드</button>
+            <input id="memoSearch" class="card-search" type="search" placeholder="메모 검색" autocomplete="off">
+          </div>
+          <div id="memoGrid" class="card-grid" aria-label="메모 카드"></div>
+        </div>
+      </section>
+
+      <section id="ideaTab" class="tab-panel" aria-label="아이디어">
+        <div class="card-board-pane idea-board" data-board="idea">
+          <div class="card-toolbar">
+            <button id="addIdeaCard" class="btn primary" type="button">+ 새 카드</button>
+            <input id="ideaSearch" class="card-search" type="search" placeholder="아이디어 검색" autocomplete="off">
+          </div>
+          <div id="ideaGrid" class="card-grid" aria-label="아이디어 카드"></div>
+        </div>
+      </section>
+
       <section id="draftTab" class="tab-panel" aria-label="초안 입력">
         <div class="draft-pane">
           <textarea id="draftText" class="text-area" spellcheck="false" placeholder="초안을 입력하세요."></textarea>
@@ -841,6 +1013,10 @@
 
   <script>
     const DB_FIELDS = ["gpt_text", "gem_text", "cla_text", "final_text", "draft_text", "summary_text"];
+    const CARD_FIELDS = {
+      memo: "memo_cards",
+      idea: "idea_cards"
+    };
     const DOM_TO_DB = {
       gptText: "gpt_text",
       gemText: "gem_text",
@@ -878,6 +1054,12 @@
       summaryCharsNoSpace: document.getElementById("summaryCharsNoSpace"),
       summaryWords: document.getElementById("summaryWords"),
       copySummaryBtn: document.getElementById("copySummaryBtn"),
+      addMemoCard: document.getElementById("addMemoCard"),
+      addIdeaCard: document.getElementById("addIdeaCard"),
+      memoSearch: document.getElementById("memoSearch"),
+      ideaSearch: document.getElementById("ideaSearch"),
+      memoGrid: document.getElementById("memoGrid"),
+      ideaGrid: document.getElementById("ideaGrid"),
       floatingAdd: document.getElementById("floatingAdd"),
       toast: document.getElementById("toast"),
       configOverlay: document.getElementById("configOverlay")
@@ -904,7 +1086,14 @@
       focusSourceId: "gptText",
       finalExpanded: false,
       finalCollapseTimer: null,
-      realtimeChannel: null
+      realtimeChannel: null,
+      memoCards: [],
+      ideaCards: [],
+      cardSearch: {
+        memo: "",
+        idea: ""
+      },
+      editingCard: null
     };
 
     init();
@@ -993,6 +1182,8 @@
         final_text: "",
         draft_text: "",
         summary_text: "",
+        memo_cards: [],
+        idea_cards: [],
         updated_at: new Date().toISOString()
       };
 
@@ -1041,6 +1232,10 @@
       syncFocusSource();
       syncFocusFinalFromMain();
       updateSummaryCount();
+      state.memoCards = normalizeCards(row.memo_cards);
+      state.ideaCards = normalizeCards(row.idea_cards);
+      renderBoard("memo");
+      renderBoard("idea");
       state.applyingRemote = false;
     }
 
@@ -1096,6 +1291,13 @@
         if (state.finalExpanded && !els.finalPane.contains(event.target)) {
           collapseFinalEditor();
         }
+
+        if (state.editingCard) {
+          const activeCard = document.querySelector(`.note-card[data-card-id="${state.editingCard.id}"]`);
+          if (activeCard && !activeCard.contains(event.target)) {
+            finishEditingCard();
+          }
+        }
       });
 
       els.floatingAdd.addEventListener("mousedown", event => event.preventDefault());
@@ -1110,6 +1312,18 @@
         updateCount();
       });
       els.copySummaryBtn.addEventListener("click", copySummaryText);
+      els.addMemoCard.addEventListener("click", () => addCard("memo"));
+      els.addIdeaCard.addEventListener("click", () => addCard("idea"));
+      els.memoSearch.addEventListener("input", event => {
+        state.cardSearch.memo = event.target.value;
+        renderBoard("memo");
+      });
+      els.ideaSearch.addEventListener("input", event => {
+        state.cardSearch.idea = event.target.value;
+        renderBoard("idea");
+      });
+      els.memoGrid.addEventListener("click", event => handleBoardClick(event, "memo"));
+      els.ideaGrid.addEventListener("click", event => handleBoardClick(event, "idea"));
       els.shareBtn.addEventListener("click", copyShareUrl);
       els.themeBtn.addEventListener("click", toggleTheme);
       els.finalExpandBtn.addEventListener("click", event => {
@@ -1134,11 +1348,205 @@
       });
       els.workspace.classList.toggle("focus-mode", name === "focus");
       els.workspace.classList.toggle("summary-mode", name === "summary");
+      els.workspace.classList.toggle("board-mode", name === "memo" || name === "idea");
       if (name === "focus") {
         syncFocusSource();
         syncFocusFinalFromMain();
       }
       hideFloatingAdd();
+    }
+
+    function getCards(board) {
+      return board === "memo" ? state.memoCards : state.ideaCards;
+    }
+
+    function setCards(board, cards) {
+      if (board === "memo") {
+        state.memoCards = cards;
+      } else {
+        state.ideaCards = cards;
+      }
+    }
+
+    function getBoardGrid(board) {
+      return board === "memo" ? els.memoGrid : els.ideaGrid;
+    }
+
+    function normalizeCards(value) {
+      const cards = Array.isArray(value) ? value : [];
+      return cards
+        .filter(card => card && typeof card === "object")
+        .map(card => ({
+          id: card.id || crypto.randomUUID(),
+          text: typeof card.text === "string" ? card.text : "",
+          pinned: Boolean(card.pinned),
+          created_at: card.created_at || new Date().toISOString()
+        }));
+    }
+
+    function getVisibleCards(board) {
+      const cards = getCards(board);
+      const query = state.cardSearch[board].trim().toLocaleLowerCase("ko-KR");
+      if (query) {
+        return cards.filter(card => card.text.toLocaleLowerCase("ko-KR").includes(query));
+      }
+      return [...cards].sort((a, b) => Number(b.pinned) - Number(a.pinned));
+    }
+
+    function renderBoard(board) {
+      const grid = getBoardGrid(board);
+      const cards = getVisibleCards(board);
+      grid.innerHTML = "";
+
+      if (!cards.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty-board";
+        empty.textContent = state.cardSearch[board].trim() ? "검색 결과가 없습니다." : "+ 새 카드로 시작하세요.";
+        grid.appendChild(empty);
+        return;
+      }
+
+      cards.forEach(card => {
+        const article = document.createElement("article");
+        article.className = `note-card${card.pinned ? " pinned" : ""}`;
+        article.dataset.cardId = card.id;
+
+        const actions = document.createElement("div");
+        actions.className = "card-actions";
+        actions.innerHTML = `
+          <button class="card-action pin-card" type="button" title="핀 고정" aria-label="핀 고정">📌</button>
+          <button class="card-action delete-card" type="button" title="삭제" aria-label="삭제">✕</button>
+        `;
+        article.appendChild(actions);
+
+        if (state.editingCard?.board === board && state.editingCard.id === card.id) {
+          const editor = document.createElement("textarea");
+          editor.className = "card-editor";
+          editor.value = card.text;
+          editor.addEventListener("input", () => {
+            state.editingCard.textarea = editor;
+          });
+          editor.addEventListener("keydown", event => {
+            if (event.key === "Escape") {
+              finishEditingCard();
+            }
+          });
+          article.appendChild(editor);
+          requestAnimationFrame(() => {
+            editor.focus();
+            editor.selectionStart = editor.selectionEnd = editor.value.length;
+          });
+        } else {
+          article.appendChild(renderCardText(card.text));
+        }
+
+        const created = document.createElement("time");
+        created.className = "card-created";
+        created.dateTime = card.created_at;
+        created.textContent = formatCardDate(card.created_at);
+        article.appendChild(created);
+        grid.appendChild(article);
+      });
+    }
+
+    function renderCardText(text) {
+      const content = document.createElement("div");
+      content.className = "card-text";
+      const lines = text ? text.split("\n") : [""];
+      const title = document.createElement("div");
+      title.className = "card-title-line";
+      title.textContent = lines[0] || "새 카드";
+      content.appendChild(title);
+
+      if (lines.length > 1) {
+        const rest = document.createElement("div");
+        rest.textContent = lines.slice(1).join("\n");
+        content.appendChild(rest);
+      }
+
+      return content;
+    }
+
+    function handleBoardClick(event, board) {
+      const cardEl = event.target.closest(".note-card");
+      if (!cardEl) return;
+
+      const cardId = cardEl.dataset.cardId;
+      if (event.target.closest(".pin-card")) {
+        toggleCardPinned(board, cardId);
+        return;
+      }
+      if (event.target.closest(".delete-card")) {
+        deleteCard(board, cardId);
+        return;
+      }
+      if (!event.target.closest(".card-editor")) {
+        startEditingCard(board, cardId);
+      }
+    }
+
+    function addCard(board) {
+      finishEditingCard();
+      const card = {
+        id: crypto.randomUUID(),
+        text: "",
+        pinned: false,
+        created_at: new Date().toISOString()
+      };
+      setCards(board, [card, ...getCards(board)]);
+      state.cardSearch[board] = "";
+      if (board === "memo") {
+        els.memoSearch.value = "";
+      } else {
+        els.ideaSearch.value = "";
+      }
+      state.editingCard = { board, id: card.id, textarea: null };
+      renderBoard(board);
+      scheduleSave();
+    }
+
+    function startEditingCard(board, cardId) {
+      if (state.editingCard?.board === board && state.editingCard.id === cardId) return;
+      finishEditingCard();
+      state.editingCard = { board, id: cardId, textarea: null };
+      renderBoard(board);
+    }
+
+    function finishEditingCard() {
+      if (!state.editingCard) return;
+      const { board, id } = state.editingCard;
+      const textarea = document.querySelector(`.note-card[data-card-id="${id}"] .card-editor`);
+      const nextText = textarea ? textarea.value : "";
+      const cards = getCards(board).map(card => card.id === id ? { ...card, text: nextText } : card);
+      setCards(board, cards);
+      state.editingCard = null;
+      renderBoard(board);
+      scheduleSave();
+    }
+
+    function toggleCardPinned(board, cardId) {
+      finishEditingCard();
+      const cards = getCards(board).map(card => card.id === cardId ? { ...card, pinned: !card.pinned } : card);
+      setCards(board, cards);
+      renderBoard(board);
+      scheduleSave();
+    }
+
+    function deleteCard(board, cardId) {
+      finishEditingCard();
+      setCards(board, getCards(board).filter(card => card.id !== cardId));
+      renderBoard(board);
+      scheduleSave();
+    }
+
+    function formatCardDate(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "";
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+      return `${month}.${day} ${hours}:${minutes}`;
     }
 
     function switchFocusModel(button) {
@@ -1346,6 +1754,8 @@
       Object.entries(DOM_TO_DB).forEach(([domId, dbField]) => {
         payload[dbField] = textareas[domId].value;
       });
+      payload[CARD_FIELDS.memo] = state.memoCards;
+      payload[CARD_FIELDS.idea] = state.ideaCards;
 
       try {
         const { data, error } = await state.supabase
