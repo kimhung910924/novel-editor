@@ -13,8 +13,11 @@ create table if not exists sessions (
   cla_text text default '',
   final_text text default '',
   draft_text text default '',
+  summary_text text default '',
   updated_at timestamptz default now()
 );
+
+alter table sessions add column if not exists summary_text text default '';
 
 alter table sessions enable row level security;
 

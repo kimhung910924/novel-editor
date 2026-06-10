@@ -354,6 +354,123 @@
       padding: 20px;
     }
 
+    .workspace.focus-mode,
+    .workspace.summary-mode {
+      grid-template-rows: 1fr;
+    }
+
+    .workspace.focus-mode .final-pane,
+    .workspace.focus-mode .h-resizer,
+    .workspace.summary-mode .final-pane,
+    .workspace.summary-mode .h-resizer {
+      display: none;
+    }
+
+    .focus-pane {
+      height: 100%;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) 8px minmax(260px, 1fr);
+      background: #fafafa;
+    }
+
+    .focus-source,
+    .focus-final {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 46px 1fr;
+      background: var(--surface);
+    }
+
+    .focus-source {
+      border-top: 3px solid #9aa0a6;
+    }
+
+    .focus-source[data-model="gpt"] { border-top-color: #9aa0a6; }
+    .focus-source[data-model="gem"] { border-top-color: #1a73e8; }
+    .focus-source[data-model="cla"] { border-top-color: #e37400; }
+
+    .model-tabs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-bottom: 1px solid #e0e0e0;
+      background: var(--surface);
+    }
+
+    .model-tab {
+      height: 30px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .model-tab.active { color: #fff; }
+    .model-tab[data-model="gpt"].active { background: #9aa0a6; border-color: #9aa0a6; }
+    .model-tab[data-model="gem"].active { background: #1a73e8; border-color: #1a73e8; }
+    .model-tab[data-model="cla"].active { background: #e37400; border-color: #e37400; }
+
+    .focus-final .final-head {
+      width: 100%;
+      min-width: 0;
+      padding: 0 14px;
+      margin: 0;
+    }
+
+    .focus-final .final-editor {
+      justify-content: stretch;
+    }
+
+    #focusFinalText,
+    #focusSourceText {
+      width: 100%;
+      min-width: 0;
+      height: 100%;
+      padding: 16px;
+    }
+
+    .summary-pane {
+      height: 100%;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 46px 1fr;
+      background: var(--surface);
+    }
+
+    .summary-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 0 14px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .summary-stats {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .summary-editor {
+      min-height: 0;
+      overflow: auto;
+    }
+
+    #summaryText {
+      height: 100%;
+      padding: 20px;
+    }
+
     .final-pane {
       min-height: 180px;
       display: grid;
@@ -588,6 +705,8 @@
 
     <nav class="tabs" aria-label="작업 탭">
       <button class="tab active" type="button" data-tab="compare">비교</button>
+      <button class="tab" type="button" data-tab="focus">집중</button>
+      <button class="tab" type="button" data-tab="summary">정리</button>
       <button class="tab" type="button" data-tab="draft">초안 입력</button>
     </nav>
 
@@ -632,6 +751,56 @@
         </div>
       </section>
 
+      <section id="focusTab" class="tab-panel" aria-label="집중">
+        <div id="focusPane" class="focus-pane">
+          <article id="focusSourcePanel" class="focus-source" data-model="gpt">
+            <div class="model-tabs" aria-label="모델 선택">
+              <button class="model-tab active" type="button" data-model="gpt" data-source="gptText">GPT</button>
+              <button class="model-tab" type="button" data-model="gem" data-source="gemText">Gemini</button>
+              <button class="model-tab" type="button" data-model="cla" data-source="claText">Claude</button>
+            </div>
+            <div class="panel-body">
+              <textarea id="focusSourceText" class="text-area source-text" spellcheck="false" placeholder="GPT 결과를 표시합니다."></textarea>
+            </div>
+          </article>
+          <div id="focusResizer" class="v-resizer" aria-hidden="true"></div>
+          <article class="focus-final" aria-label="집중 최종본">
+            <div class="final-head">
+              <div class="panel-title">최종본</div>
+              <div class="final-tools">
+                <span id="focusCountValue" class="counter">0</span>
+                <select id="focusCountMode" class="select" aria-label="자수 계산 방식">
+                  <option value="chars">자수</option>
+                  <option value="charsNoSpace">공백제외</option>
+                  <option value="words">단어수</option>
+                </select>
+              </div>
+            </div>
+            <div class="final-editor">
+              <textarea id="focusFinalText" class="text-area" spellcheck="false" placeholder="선택한 문장이나 전체 텍스트를 모아 최종본을 편집하세요."></textarea>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="summaryTab" class="tab-panel" aria-label="정리">
+        <div class="summary-pane">
+          <div class="summary-head">
+            <div class="summary-stats">
+              <span>전체 자수: <strong id="summaryChars">0자</strong></span>
+              <span>|</span>
+              <span>공백 제외: <strong id="summaryCharsNoSpace">0자</strong></span>
+              <span>|</span>
+              <span>단어 수: <strong id="summaryWords">0</strong></span>
+            </div>
+            <button id="copySummaryBtn" class="btn" type="button">전체 복사</button>
+          </div>
+          <div class="summary-editor">
+            <textarea id="summaryText" class="text-area" spellcheck="false" placeholder="한 화 전체 정리를 입력하세요."></textarea>
+          </div>
+        </div>
+      </section>
+
       <section id="draftTab" class="tab-panel" aria-label="초안 입력">
         <div class="draft-pane">
           <textarea id="draftText" class="text-area" spellcheck="false" placeholder="초안을 입력하세요."></textarea>
@@ -671,13 +840,14 @@
   </div>
 
   <script>
-    const DB_FIELDS = ["gpt_text", "gem_text", "cla_text", "final_text", "draft_text"];
+    const DB_FIELDS = ["gpt_text", "gem_text", "cla_text", "final_text", "draft_text", "summary_text"];
     const DOM_TO_DB = {
       gptText: "gpt_text",
       gemText: "gem_text",
       claText: "cla_text",
       finalText: "final_text",
-      draftText: "draft_text"
+      draftText: "draft_text",
+      summaryText: "summary_text"
     };
     const DB_TO_DOM = Object.fromEntries(Object.entries(DOM_TO_DB).map(([dom, db]) => [db, dom]));
     const SAVE_DELAY = 700;
@@ -688,6 +858,11 @@
     const els = {
       workspace: document.getElementById("workspace"),
       comparePane: document.getElementById("comparePane"),
+      focusPane: document.getElementById("focusPane"),
+      focusResizer: document.getElementById("focusResizer"),
+      focusSourcePanel: document.getElementById("focusSourcePanel"),
+      focusSourceText: document.getElementById("focusSourceText"),
+      focusFinalText: document.getElementById("focusFinalText"),
       heightResizer: document.getElementById("heightResizer"),
       saveStatus: document.getElementById("saveStatus"),
       saveStatusText: document.getElementById("saveStatusText"),
@@ -697,6 +872,12 @@
       finalExpandBtn: document.getElementById("finalExpandBtn"),
       countMode: document.getElementById("countMode"),
       countValue: document.getElementById("countValue"),
+      focusCountMode: document.getElementById("focusCountMode"),
+      focusCountValue: document.getElementById("focusCountValue"),
+      summaryChars: document.getElementById("summaryChars"),
+      summaryCharsNoSpace: document.getElementById("summaryCharsNoSpace"),
+      summaryWords: document.getElementById("summaryWords"),
+      copySummaryBtn: document.getElementById("copySummaryBtn"),
       floatingAdd: document.getElementById("floatingAdd"),
       toast: document.getElementById("toast"),
       configOverlay: document.getElementById("configOverlay")
@@ -707,7 +888,8 @@
       gemText: document.getElementById("gemText"),
       claText: document.getElementById("claText"),
       finalText: document.getElementById("finalText"),
-      draftText: document.getElementById("draftText")
+      draftText: document.getElementById("draftText"),
+      summaryText: document.getElementById("summaryText")
     };
 
     const state = {
@@ -718,6 +900,8 @@
       applyingRemote: false,
       selectedText: "",
       activeSelectionEl: null,
+      focusModel: "gpt",
+      focusSourceId: "gptText",
       finalExpanded: false,
       finalCollapseTimer: null,
       realtimeChannel: null
@@ -808,6 +992,7 @@
         cla_text: "",
         final_text: "",
         draft_text: "",
+        summary_text: "",
         updated_at: new Date().toISOString()
       };
 
@@ -853,13 +1038,23 @@
         }
       });
       updateCount();
+      syncFocusSource();
+      syncFocusFinalFromMain();
+      updateSummaryCount();
       state.applyingRemote = false;
     }
 
     function bindUi() {
       Object.values(textareas).forEach(el => {
         el.addEventListener("input", () => {
+          if (el === textareas[state.focusSourceId]) {
+            syncFocusSource();
+          }
+          if (el === textareas.finalText) {
+            syncFocusFinalFromMain();
+          }
           updateCount();
+          updateSummaryCount();
           scheduleSave();
         });
       });
@@ -876,6 +1071,21 @@
         el.addEventListener("mouseup", () => updateFloatingAdd(el));
         el.addEventListener("keyup", () => updateFloatingAdd(el));
         el.addEventListener("scroll", hideFloatingAdd);
+      });
+
+      document.querySelectorAll(".model-tab").forEach(button => {
+        button.addEventListener("click", () => switchFocusModel(button));
+      });
+
+      els.focusSourceText.addEventListener("input", () => {
+        textareas[state.focusSourceId].value = els.focusSourceText.value;
+        scheduleSave();
+      });
+
+      els.focusFinalText.addEventListener("input", () => {
+        textareas.finalText.value = els.focusFinalText.value;
+        updateCount();
+        scheduleSave();
       });
 
       document.addEventListener("mousedown", event => {
@@ -895,6 +1105,11 @@
       });
 
       els.countMode.addEventListener("change", updateCount);
+      els.focusCountMode.addEventListener("change", () => {
+        els.countMode.value = els.focusCountMode.value;
+        updateCount();
+      });
+      els.copySummaryBtn.addEventListener("click", copySummaryText);
       els.shareBtn.addEventListener("click", copyShareUrl);
       els.themeBtn.addEventListener("click", toggleTheme);
       els.finalExpandBtn.addEventListener("click", event => {
@@ -902,10 +1117,11 @@
         toggleFinalEditor();
       });
 
-      document.querySelectorAll(".v-resizer").forEach(resizer => {
+      document.querySelectorAll(".v-resizer[data-left]").forEach(resizer => {
         resizer.addEventListener("pointerdown", startVerticalResize);
       });
 
+      els.focusResizer.addEventListener("pointerdown", startFocusResize);
       els.heightResizer.addEventListener("pointerdown", startHeightResize);
     }
 
@@ -916,7 +1132,37 @@
       document.querySelectorAll(".tab-panel").forEach(panel => {
         panel.classList.toggle("active", panel.id === `${name}Tab`);
       });
+      els.workspace.classList.toggle("focus-mode", name === "focus");
+      els.workspace.classList.toggle("summary-mode", name === "summary");
+      if (name === "focus") {
+        syncFocusSource();
+        syncFocusFinalFromMain();
+      }
       hideFloatingAdd();
+    }
+
+    function switchFocusModel(button) {
+      state.focusModel = button.dataset.model;
+      state.focusSourceId = button.dataset.source;
+      document.querySelectorAll(".model-tab").forEach(tab => {
+        tab.classList.toggle("active", tab === button);
+      });
+      els.focusSourcePanel.dataset.model = state.focusModel;
+      syncFocusSource();
+      hideFloatingAdd();
+    }
+
+    function syncFocusSource() {
+      if (!els.focusSourceText) return;
+      const source = textareas[state.focusSourceId];
+      if (source && document.activeElement !== els.focusSourceText) {
+        els.focusSourceText.value = source.value;
+      }
+    }
+
+    function syncFocusFinalFromMain() {
+      if (!els.focusFinalText || document.activeElement === els.focusFinalText) return;
+      els.focusFinalText.value = textareas.finalText.value;
     }
 
     function updateFloatingAdd(el) {
@@ -980,8 +1226,10 @@
       const final = textareas.finalText;
       const prefix = final.value.trim().length ? "\n\n" : "";
       final.value += `${prefix}${value}`;
-      final.focus();
-      final.selectionStart = final.selectionEnd = final.value.length;
+      syncFocusFinalFromMain();
+      const activeFinal = els.workspace.classList.contains("focus-mode") ? els.focusFinalText : final;
+      activeFinal.focus();
+      activeFinal.selectionStart = activeFinal.selectionEnd = activeFinal.value.length;
       updateCount();
       scheduleSave();
     }
@@ -1026,6 +1274,35 @@
 
     function setPanelColumns(columns) {
       els.comparePane.style.gridTemplateColumns = `${columns[0]}px 8px ${columns[2]}px 8px ${columns[4]}px`;
+    }
+
+    function startFocusResize(event) {
+      const startX = event.clientX;
+      const columns = getComputedStyle(els.focusPane)
+        .gridTemplateColumns
+        .split(" ")
+        .map(value => Number.parseFloat(value));
+      const leftStart = columns[0];
+      const rightStart = columns[2];
+
+      els.focusResizer.setPointerCapture(event.pointerId);
+      els.focusResizer.classList.add("dragging");
+
+      const onMove = moveEvent => {
+        const delta = moveEvent.clientX - startX;
+        const left = Math.max(260, leftStart + delta);
+        const right = Math.max(260, rightStart - delta);
+        els.focusPane.style.gridTemplateColumns = `${left}px 8px ${right}px`;
+      };
+
+      const onUp = () => {
+        els.focusResizer.classList.remove("dragging");
+        els.focusResizer.removeEventListener("pointermove", onMove);
+        els.focusResizer.removeEventListener("pointerup", onUp);
+      };
+
+      els.focusResizer.addEventListener("pointermove", onMove);
+      els.focusResizer.addEventListener("pointerup", onUp);
     }
 
     function startHeightResize(event) {
@@ -1090,17 +1367,29 @@
     function updateCount() {
       const text = textareas.finalText.value;
       const mode = els.countMode.value;
-      let count = 0;
-
-      if (mode === "chars") {
-        count = Array.from(text).length;
-      } else if (mode === "charsNoSpace") {
-        count = Array.from(text.replace(/\s/g, "")).length;
-      } else {
-        count = text.trim() ? text.trim().split(/\s+/).length : 0;
-      }
-
+      const count = countText(text, mode);
       els.countValue.textContent = count.toLocaleString("ko-KR");
+      els.focusCountMode.value = mode;
+      els.focusCountValue.textContent = count.toLocaleString("ko-KR");
+      syncFocusFinalFromMain();
+    }
+
+    function countText(text, mode) {
+      if (mode === "chars") return Array.from(text).length;
+      if (mode === "charsNoSpace") return Array.from(text.replace(/\s/g, "")).length;
+      return text.trim() ? text.trim().split(/\s+/).length : 0;
+    }
+
+    function updateSummaryCount() {
+      const text = textareas.summaryText.value;
+      els.summaryChars.textContent = `${countText(text, "chars").toLocaleString("ko-KR")}자`;
+      els.summaryCharsNoSpace.textContent = `${countText(text, "charsNoSpace").toLocaleString("ko-KR")}자`;
+      els.summaryWords.textContent = countText(text, "words").toLocaleString("ko-KR");
+    }
+
+    async function copySummaryText() {
+      await navigator.clipboard.writeText(textareas.summaryText.value);
+      showToast("정리 내용을 복사했습니다.");
     }
 
     async function copyShareUrl() {
