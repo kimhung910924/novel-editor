@@ -205,6 +205,10 @@
       grid-template-rows: var(--editor-h) 10px var(--final-h);
     }
 
+    .workspace.compare2-mode {
+      grid-template-rows: 1fr;
+    }
+
     .tab-panel {
       min-height: 0;
       display: none;
@@ -218,6 +222,14 @@
       height: 100%;
       display: grid;
       grid-template-columns: minmax(220px, 1fr) 8px minmax(220px, 1fr) 8px minmax(220px, 1fr);
+      min-width: 0;
+      background: #fafafa;
+    }
+
+    .compare2-pane {
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(220px, 1fr));
       min-width: 0;
       background: #fafafa;
     }
@@ -262,6 +274,11 @@
       border-top: 3px solid #e37400;
     }
 
+    .source-panel.final-side {
+      grid-template-rows: 46px 1fr;
+      border-top: 3px solid var(--accent);
+    }
+
     .source-panel.gpt .panel-head {
       background: #f1f3f4;
       color: #5f6368;
@@ -275,6 +292,11 @@
     .source-panel.claude .panel-head {
       background: #fef3e2;
       color: #e37400;
+    }
+
+    .source-panel.final-side .final-head {
+      background: #f8fafc;
+      border-bottom: 1px solid #e0e0e0;
     }
 
     .panel-body {
@@ -566,6 +588,8 @@
 
     .workspace.focus-mode .final-pane,
     .workspace.focus-mode .h-resizer,
+    .workspace.compare2-mode .final-pane,
+    .workspace.compare2-mode .h-resizer,
     .workspace.summary-mode .final-pane,
     .workspace.summary-mode .h-resizer,
     .workspace.board-mode .final-pane,
@@ -873,7 +897,8 @@
         padding: 0 9px;
       }
 
-      .compare-pane {
+      .compare-pane,
+      .compare2-pane {
         overflow-x: auto;
       }
 
@@ -929,7 +954,8 @@
     </header>
 
     <nav class="tabs" aria-label="작업 탭">
-      <button class="tab active" type="button" data-tab="compare">비교</button>
+      <button class="tab active" type="button" data-tab="compare">비교1</button>
+      <button class="tab" type="button" data-tab="compare2">비교2</button>
       <button class="tab" type="button" data-tab="focus">집중</button>
       <button class="tab" type="button" data-tab="summary">정리</button>
       <button class="tab" type="button" data-tab="memo">메모</button>
@@ -976,6 +1002,63 @@
             </div>
             <div class="panel-foot">
               <button class="btn add-all" type="button" data-source="claText">전체 텍스트 → 최종본</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="compare2Tab" class="tab-panel" aria-label="비교2 패널">
+        <div id="compare2Pane" class="compare2-pane">
+          <article class="source-panel gpt">
+            <div class="panel-head">
+              <div class="panel-title">GPT</div>
+              <button class="btn clear-btn clear-text" type="button" data-clear-target="gptText">비우기</button>
+            </div>
+            <div class="panel-body">
+              <textarea id="compare2GptText" class="text-area source-text" spellcheck="false" placeholder="GPT 결과를 붙여넣으세요."></textarea>
+            </div>
+            <div class="panel-foot">
+              <button class="btn add-all" type="button" data-source="compare2GptText">전체 텍스트 → 최종본</button>
+            </div>
+          </article>
+          <article class="source-panel gemini">
+            <div class="panel-head">
+              <div class="panel-title">Gemini</div>
+              <button class="btn clear-btn clear-text" type="button" data-clear-target="gemText">비우기</button>
+            </div>
+            <div class="panel-body">
+              <textarea id="compare2GemText" class="text-area source-text" spellcheck="false" placeholder="Gemini 결과를 붙여넣으세요."></textarea>
+            </div>
+            <div class="panel-foot">
+              <button class="btn add-all" type="button" data-source="compare2GemText">전체 텍스트 → 최종본</button>
+            </div>
+          </article>
+          <article class="source-panel claude">
+            <div class="panel-head">
+              <div class="panel-title">Claude</div>
+              <button class="btn clear-btn clear-text" type="button" data-clear-target="claText">비우기</button>
+            </div>
+            <div class="panel-body">
+              <textarea id="compare2ClaText" class="text-area source-text" spellcheck="false" placeholder="Claude 결과를 붙여넣으세요."></textarea>
+            </div>
+            <div class="panel-foot">
+              <button class="btn add-all" type="button" data-source="compare2ClaText">전체 텍스트 → 최종본</button>
+            </div>
+          </article>
+          <article class="source-panel final-side" aria-label="비교2 최종본">
+            <div class="final-head">
+              <div class="panel-title">최종본</div>
+              <div class="final-tools">
+                <span id="compare2CountValue" class="counter">0</span>
+                <select id="compare2CountMode" class="select" aria-label="자수 계산 방식">
+                  <option value="chars">자수</option>
+                  <option value="charsNoSpace">공백제외</option>
+                  <option value="words">단어수</option>
+                </select>
+              </div>
+            </div>
+            <div class="panel-body">
+              <textarea id="compare2FinalText" class="text-area" spellcheck="false" placeholder="선택한 문장이나 전체 텍스트를 모아 최종본을 편집하세요."></textarea>
             </div>
           </article>
         </div>
@@ -1123,6 +1206,11 @@
     const els = {
       workspace: document.getElementById("workspace"),
       comparePane: document.getElementById("comparePane"),
+      compare2Pane: document.getElementById("compare2Pane"),
+      compare2GptText: document.getElementById("compare2GptText"),
+      compare2GemText: document.getElementById("compare2GemText"),
+      compare2ClaText: document.getElementById("compare2ClaText"),
+      compare2FinalText: document.getElementById("compare2FinalText"),
       focusPane: document.getElementById("focusPane"),
       focusResizer: document.getElementById("focusResizer"),
       focusSourcePanel: document.getElementById("focusSourcePanel"),
@@ -1137,6 +1225,8 @@
       finalExpandBtn: document.getElementById("finalExpandBtn"),
       countMode: document.getElementById("countMode"),
       countValue: document.getElementById("countValue"),
+      compare2CountMode: document.getElementById("compare2CountMode"),
+      compare2CountValue: document.getElementById("compare2CountValue"),
       focusCountMode: document.getElementById("focusCountMode"),
       focusCountValue: document.getElementById("focusCountValue"),
       summaryChars: document.getElementById("summaryChars"),
@@ -1322,6 +1412,7 @@
           el.value = row[field] || "";
         }
       });
+      syncAllCompare2FromMain();
       updateCount();
       syncFocusSource();
       syncFocusFinalFromMain();
@@ -1341,19 +1432,26 @@
           }
           if (el === textareas.finalText) {
             syncFocusFinalFromMain();
+            syncCompare2FinalFromMain();
           }
+          syncCompare2SourcesFromMain(el);
           updateCount();
           updateSummaryCount();
           scheduleSave();
         });
       });
 
+      bindMirrorTextArea(els.compare2GptText, textareas.gptText);
+      bindMirrorTextArea(els.compare2GemText, textareas.gemText);
+      bindMirrorTextArea(els.compare2ClaText, textareas.claText);
+      bindFinalMirror(els.compare2FinalText);
+
       document.querySelectorAll(".tab").forEach(tab => {
         tab.addEventListener("click", () => switchTab(tab.dataset.tab));
       });
 
       document.querySelectorAll(".add-all").forEach(button => {
-        button.addEventListener("click", () => appendToFinal(textareas[button.dataset.source].value));
+        button.addEventListener("click", () => appendToFinal(getTextAreaById(button.dataset.source).value));
       });
 
       document.querySelectorAll(".clear-text").forEach(button => {
@@ -1377,6 +1475,7 @@
 
       els.focusFinalText.addEventListener("input", () => {
         textareas.finalText.value = els.focusFinalText.value;
+        syncCompare2FinalFromMain();
         updateCount();
         scheduleSave();
       });
@@ -1408,6 +1507,10 @@
       els.countMode.addEventListener("change", updateCount);
       els.focusCountMode.addEventListener("change", () => {
         els.countMode.value = els.focusCountMode.value;
+        updateCount();
+      });
+      els.compare2CountMode.addEventListener("change", () => {
+        els.countMode.value = els.compare2CountMode.value;
         updateCount();
       });
       els.copySummaryBtn.addEventListener("click", copySummaryText);
@@ -1450,6 +1553,66 @@
       els.heightResizer.addEventListener("pointerdown", startHeightResize);
     }
 
+    function getTextAreaById(id) {
+      return textareas[id] || els[id];
+    }
+
+    function bindMirrorTextArea(mirror, source) {
+      if (!mirror || !source) return;
+      mirror.value = source.value;
+      mirror.addEventListener("input", () => {
+        source.value = mirror.value;
+        if (source === textareas[state.focusSourceId]) {
+          syncFocusSource();
+        }
+        updateCount();
+        updateSummaryCount();
+        scheduleSave();
+      });
+    }
+
+    function bindFinalMirror(mirror) {
+      if (!mirror) return;
+      mirror.value = textareas.finalText.value;
+      mirror.addEventListener("input", () => {
+        textareas.finalText.value = mirror.value;
+        syncFocusFinalFromMain();
+        updateCount();
+        scheduleSave();
+      });
+    }
+
+    function syncCompare2SourcesFromMain(source) {
+      const pairs = [
+        [textareas.gptText, els.compare2GptText],
+        [textareas.gemText, els.compare2GemText],
+        [textareas.claText, els.compare2ClaText]
+      ];
+      pairs.forEach(([main, mirror]) => {
+        if (source === main && mirror && document.activeElement !== mirror) {
+          mirror.value = main.value;
+        }
+      });
+    }
+
+    function syncAllCompare2FromMain() {
+      [
+        [textareas.gptText, els.compare2GptText],
+        [textareas.gemText, els.compare2GemText],
+        [textareas.claText, els.compare2ClaText],
+        [textareas.finalText, els.compare2FinalText]
+      ].forEach(([main, mirror]) => {
+        if (mirror && document.activeElement !== mirror) {
+          mirror.value = main.value;
+        }
+      });
+    }
+
+    function syncCompare2FinalFromMain() {
+      if (!els.compare2FinalText || document.activeElement === els.compare2FinalText) return;
+      els.compare2FinalText.value = textareas.finalText.value;
+    }
+
     function switchTab(name) {
       document.querySelectorAll(".tab").forEach(tab => {
         tab.classList.toggle("active", tab.dataset.tab === name);
@@ -1457,9 +1620,13 @@
       document.querySelectorAll(".tab-panel").forEach(panel => {
         panel.classList.toggle("active", panel.id === `${name}Tab`);
       });
+      els.workspace.classList.toggle("compare2-mode", name === "compare2");
       els.workspace.classList.toggle("focus-mode", name === "focus");
       els.workspace.classList.toggle("summary-mode", name === "summary");
       els.workspace.classList.toggle("board-mode", name === "memo" || name === "idea");
+      if (name === "compare2") {
+        syncAllCompare2FromMain();
+      }
       if (name === "focus") {
         syncFocusSource();
         syncFocusFinalFromMain();
@@ -1474,6 +1641,7 @@
       if (domId === state.focusSourceId) {
         syncFocusSource();
       }
+      syncCompare2SourcesFromMain(el);
       updateCount();
       updateSummaryCount();
       hideFloatingAdd();
@@ -1767,7 +1935,12 @@
       const prefix = final.value.trim().length ? "\n\n" : "";
       final.value += `${prefix}${value}`;
       syncFocusFinalFromMain();
-      const activeFinal = els.workspace.classList.contains("focus-mode") ? els.focusFinalText : final;
+      syncCompare2FinalFromMain();
+      const activeFinal = els.workspace.classList.contains("focus-mode")
+        ? els.focusFinalText
+        : els.workspace.classList.contains("compare2-mode")
+          ? els.compare2FinalText
+          : final;
       activeFinal.focus();
       activeFinal.selectionStart = activeFinal.selectionEnd = activeFinal.value.length;
       updateCount();
@@ -1911,9 +2084,12 @@
       const mode = els.countMode.value;
       const count = countText(text, mode);
       els.countValue.textContent = count.toLocaleString("ko-KR");
+      els.compare2CountMode.value = mode;
+      els.compare2CountValue.textContent = count.toLocaleString("ko-KR");
       els.focusCountMode.value = mode;
       els.focusCountValue.textContent = count.toLocaleString("ko-KR");
       syncFocusFinalFromMain();
+      syncCompare2FinalFromMain();
     }
 
     function countText(text, mode) {
