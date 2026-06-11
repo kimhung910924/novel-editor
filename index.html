@@ -470,20 +470,6 @@
       font-weight: 500;
     }
 
-    .card-editor {
-      width: 100%;
-      min-height: 118px;
-      resize: vertical;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: var(--surface);
-      color: var(--text);
-      padding: 8px;
-      outline: 0;
-      line-height: 1.6;
-      font-size: 14px;
-    }
-
     .card-created {
       position: absolute;
       right: 12px;
@@ -497,6 +483,79 @@
       color: var(--muted);
       padding: 18px 4px;
       font-size: 13px;
+    }
+
+    .card-edit-overlay {
+      position: fixed;
+      inset: var(--topbar-h) 0 0 100px;
+      z-index: 55;
+      display: none;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: -18px 0 36px rgba(0, 0, 0, 0.12);
+    }
+
+    .card-edit-overlay.show {
+      display: grid;
+      grid-template-rows: 48px 1fr;
+    }
+
+    .card-edit-overlay.idea-edit {
+      background: rgba(255, 253, 231, 0.98);
+    }
+
+    .card-edit-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 24px;
+      border-bottom: 1px solid #e0e0e0;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .card-edit-overlay.idea-edit .card-edit-head {
+      background: rgba(255, 248, 225, 0.9);
+    }
+
+    .card-edit-title {
+      font-weight: 780;
+      white-space: nowrap;
+    }
+
+    .card-edit-count {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .card-edit-spacer {
+      flex: 1;
+    }
+
+    .card-edit-body {
+      min-height: 0;
+      overflow: auto;
+      display: flex;
+      justify-content: center;
+      background: #fff;
+    }
+
+    .card-edit-overlay.idea-edit .card-edit-body {
+      background: #fffde7;
+    }
+
+    .expanded-card-editor {
+      width: min(78%, 980px);
+      min-width: 520px;
+      min-height: 100%;
+      resize: none;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      padding: 28px 0 80px;
+      line-height: 1.85;
+      font-size: 17px;
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
     }
 
     .workspace.focus-mode,
@@ -840,6 +899,15 @@
       .final-pane.final-overlay {
         width: 88%;
       }
+
+      .card-edit-overlay {
+        inset: var(--topbar-h) 0 0 0;
+      }
+
+      .expanded-card-editor {
+        width: calc(100% - 32px);
+        min-width: 0;
+      }
     }
   </style>
 </head>
@@ -1013,6 +1081,17 @@
 
   <button id="floatingAdd" class="floating-add" type="button">↓ 최종본에 추가</button>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="cardEditOverlay" class="card-edit-overlay" aria-hidden="true">
+    <div class="card-edit-head">
+      <div id="cardEditTitle" class="card-edit-title">메모 편집</div>
+      <div id="cardEditCount" class="card-edit-count">0자</div>
+      <div class="card-edit-spacer"></div>
+      <button id="cardEditCloseBtn" class="btn icon" type="button" title="닫기" aria-label="닫기">✕</button>
+    </div>
+    <div class="card-edit-body">
+      <textarea id="cardEditText" class="expanded-card-editor" spellcheck="false"></textarea>
+    </div>
+  </div>
 
   <div id="configOverlay" class="config-overlay">
     <div class="config-box">
@@ -1070,6 +1149,11 @@
       ideaSearch: document.getElementById("ideaSearch"),
       memoGrid: document.getElementById("memoGrid"),
       ideaGrid: document.getElementById("ideaGrid"),
+      cardEditOverlay: document.getElementById("cardEditOverlay"),
+      cardEditTitle: document.getElementById("cardEditTitle"),
+      cardEditCount: document.getElementById("cardEditCount"),
+      cardEditText: document.getElementById("cardEditText"),
+      cardEditCloseBtn: document.getElementById("cardEditCloseBtn"),
       floatingAdd: document.getElementById("floatingAdd"),
       toast: document.getElementById("toast"),
       configOverlay: document.getElementById("configOverlay")
@@ -1308,7 +1392,8 @@
 
         if (state.editingCard) {
           const activeCard = document.querySelector(`.note-card[data-card-id="${state.editingCard.id}"]`);
-          if (activeCard && !activeCard.contains(event.target)) {
+          const insideEditor = els.cardEditOverlay.contains(event.target);
+          if (!insideEditor && activeCard && !activeCard.contains(event.target)) {
             finishEditingCard();
           }
         }
@@ -1338,6 +1423,18 @@
       });
       els.memoGrid.addEventListener("click", event => handleBoardClick(event, "memo"));
       els.ideaGrid.addEventListener("click", event => handleBoardClick(event, "idea"));
+      els.cardEditText.addEventListener("input", updateCardEditCount);
+      els.cardEditText.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+          finishEditingCard();
+        }
+      });
+      els.cardEditCloseBtn.addEventListener("click", finishEditingCard);
+      els.cardEditOverlay.addEventListener("mousedown", event => {
+        if (event.target === els.cardEditOverlay) {
+          finishEditingCard();
+        }
+      });
       els.shareBtn.addEventListener("click", copyShareUrl);
       els.themeBtn.addEventListener("click", toggleTheme);
       els.finalExpandBtn.addEventListener("click", event => {
@@ -1447,26 +1544,7 @@
         `;
         article.appendChild(actions);
 
-        if (state.editingCard?.board === board && state.editingCard.id === card.id) {
-          const editor = document.createElement("textarea");
-          editor.className = "card-editor";
-          editor.value = card.text;
-          editor.addEventListener("input", () => {
-            state.editingCard.textarea = editor;
-          });
-          editor.addEventListener("keydown", event => {
-            if (event.key === "Escape") {
-              finishEditingCard();
-            }
-          });
-          article.appendChild(editor);
-          requestAnimationFrame(() => {
-            editor.focus();
-            editor.selectionStart = editor.selectionEnd = editor.value.length;
-          });
-        } else {
-          article.appendChild(renderCardText(card.text));
-        }
+        article.appendChild(renderCardText(card.text));
 
         const created = document.createElement("time");
         created.className = "card-created";
@@ -1508,9 +1586,7 @@
         deleteCard(board, cardId);
         return;
       }
-      if (!event.target.closest(".card-editor")) {
-        startEditingCard(board, cardId);
-      }
+      startEditingCard(board, cardId);
     }
 
     function addCard(board) {
@@ -1528,28 +1604,56 @@
       } else {
         els.ideaSearch.value = "";
       }
-      state.editingCard = { board, id: card.id, textarea: null };
+      state.editingCard = { board, id: card.id };
       renderBoard(board);
+      openCardEditor(board, card);
       scheduleSave();
     }
 
     function startEditingCard(board, cardId) {
       if (state.editingCard?.board === board && state.editingCard.id === cardId) return;
       finishEditingCard();
-      state.editingCard = { board, id: cardId, textarea: null };
-      renderBoard(board);
+      const card = getCards(board).find(item => item.id === cardId);
+      if (!card) return;
+      state.editingCard = { board, id: cardId };
+      openCardEditor(board, card);
     }
 
     function finishEditingCard() {
       if (!state.editingCard) return;
       const { board, id } = state.editingCard;
-      const textarea = document.querySelector(`.note-card[data-card-id="${id}"] .card-editor`);
-      const nextText = textarea ? textarea.value : "";
+      const nextText = els.cardEditText.value;
       const cards = getCards(board).map(card => card.id === id ? { ...card, text: nextText } : card);
       setCards(board, cards);
       state.editingCard = null;
+      closeCardEditor();
       renderBoard(board);
       scheduleSave();
+    }
+
+    function openCardEditor(board, card) {
+      els.cardEditTitle.textContent = board === "memo" ? "메모 편집" : "아이디어 편집";
+      els.cardEditText.value = card.text;
+      els.cardEditOverlay.classList.toggle("idea-edit", board === "idea");
+      els.cardEditOverlay.classList.add("show");
+      els.cardEditOverlay.setAttribute("aria-hidden", "false");
+      updateCardEditCount();
+      requestAnimationFrame(() => {
+        els.cardEditText.focus();
+        els.cardEditText.selectionStart = els.cardEditText.selectionEnd = els.cardEditText.value.length;
+      });
+    }
+
+    function closeCardEditor() {
+      els.cardEditOverlay.classList.remove("show");
+      els.cardEditOverlay.classList.remove("idea-edit");
+      els.cardEditOverlay.setAttribute("aria-hidden", "true");
+      els.cardEditText.value = "";
+      updateCardEditCount();
+    }
+
+    function updateCardEditCount() {
+      els.cardEditCount.textContent = `${countText(els.cardEditText.value, "chars").toLocaleString("ko-KR")}자`;
     }
 
     function toggleCardPinned(board, cardId) {
